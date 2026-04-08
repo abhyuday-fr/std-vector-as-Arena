@@ -1,0 +1,54 @@
+name: Benchmark and Profile
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y linux-tools-common linux-tools-generic linux-tools-$(uname -r)
+        git clone https://github.com/brendangregg/FlameGraph.git
+
+    - name: Set perf permissions
+      run: |
+        sudo sysctl -w kernel.perf_event_paranoid=-1
+        sudo sysctl -w kernel.kptr_restrict=0
+
+    - name: Build
+      run: make
+
+    - name: Run Benchmarks
+      run: |
+        make benchmark > benchmark_results.txt
+        cat benchmark_results.txt
+
+    - name: Generate Flamegraphs
+      run: |
+        # Use sudo for perf record if needed, but we try without first after sysctl
+        make flamegraphs
+
+    - name: Commit and Push results
+      if: github.event_name == 'push'
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        
+        # Update README with benchmark results
+        echo "## Latest Benchmark Results" > BENCHMARK.md
+        echo '```' >> BENCHMARK.md
+        cat benchmark_results.txt >> BENCHMARK.md
+        echo '```' >> BENCHMARK.md
+        
+        git add *.svg BENCHMARK.md
+        git commit -m "Update benchmarks and flamegraphs [skip ci]" || echo "No changes to commit"
+        git push

@@ -1,0 +1,17 @@
+# Binaries
+bench
+
+# Perf data
+perf*.data
+
+# SVGs (Wait, we want to show them in the README? But the CI should generate them)
+# Actually, the user wants the CI to generate them.
+# If the CI pushes them back, they should not be in gitignore.
+# But I'll exclude them from initial push.
+
+# FlameGraph tools
+FlameGraph/
+
+# Temporary
+benchmark_results.txt
+BENCHMARK.md
